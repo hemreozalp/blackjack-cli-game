@@ -89,6 +89,5 @@ public class GameService {
         } else {
             outputService.printMessage("You win!");
         }
-
     }
 }
