@@ -20,7 +20,14 @@ public class Hand {
 
         for (Card card : cards) {
             value += card.getRank().getValue();
-            if (card.getRank() == Rank.ACE) aceCount++;
+            if (card.getRank() == Rank.ACE) {
+                aceCount++;
+            }
+        }
+
+        while (value > 21 && aceCount > 0) {
+            value -= 10;
+            aceCount--;
         }
 
         return value;
