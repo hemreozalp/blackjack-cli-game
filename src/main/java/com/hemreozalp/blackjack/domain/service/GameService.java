@@ -3,6 +3,7 @@ package com.hemreozalp.blackjack.domain.service;
 import com.hemreozalp.blackjack.domain.model.Dealer;
 import com.hemreozalp.blackjack.domain.model.Deck;
 import com.hemreozalp.blackjack.domain.model.Player;
+import com.hemreozalp.blackjack.domain.model.Wallet;
 import com.hemreozalp.blackjack.domain.strategy.DeckShuffler;
 import com.hemreozalp.blackjack.domain.strategy.ScoringStrategy;
 
@@ -23,26 +24,74 @@ public class GameService {
     }
 
     public void startNewGame() {
-        Deck deck = new Deck();
-        deckShuffler.shuffle(deck);
-
-        Player player = new Player("You");
+        Wallet wallet = new Wallet(1000);
+        Player player = new Player("You", wallet);
         Dealer dealer = new Dealer();
 
-        // First draw
-        player.addCard(deck.drawCard());
-        dealer.addCard(deck.drawCard());
-        player.addCard(deck.drawCard());
-        dealer.addCard(deck.drawCard());
+        boolean continuePlaying = true;
 
-        // First card is visible, second not
-        outputService.printMessage("Dealer's visible card: " + dealer.getHand().getCards().get(0));
-        outputService.printMessage(player.toString());
+        while (continuePlaying && player.getWallet().getBalance() > 0) {
+            Deck deck = new Deck();
+            deckShuffler.shuffle(deck);
 
-        playerTurn(player, deck);
-        if (!player.isBust()) dealerTurn(dealer, deck);
+            outputService.printMessage("Your current balance: " + player.getWallet().getBalance());
+            outputService.printMessage("Enter your bet amount: ");
 
-        evaluateWinner(player, dealer);
+            int bet;
+            try {
+                bet = Integer.parseInt(inputService.readCommand());
+            } catch (NumberFormatException e) {
+                outputService.printMessage("Invalid bet amount.");
+                return;
+            }
+
+            if (!player.getWallet().withdraw(bet)) {
+                outputService.printMessage("Insufficient balance.");
+                continue;
+            }
+
+            // reseting hands for each round
+            player.getHand().getCards().clear();
+            dealer.getHand().getCards().clear();
+
+            // First draw
+            player.addCard(deck.drawCard());
+            dealer.addCard(deck.drawCard());
+            player.addCard(deck.drawCard());
+            dealer.addCard(deck.drawCard());
+
+            // First card is visible, second not
+            outputService.printMessage("Dealer's visible card: " + dealer.getHand().getCards().get(0));
+            outputService.printMessage(player.toString());
+
+            playerTurn(player, deck);
+            if (!player.isBust()) dealerTurn(dealer, deck);
+
+            evaluateWinner(player, dealer, bet);
+
+            if (player.getWallet().getBalance() <= 0) {
+                outputService.printMessage("You're out of balance. Game over.");
+                break;
+            }
+
+            boolean validAnswer = false;
+            while (!validAnswer) {
+                outputService.printMessage("Play again? (y/n): ");
+                String again = inputService.readCommand().trim().toLowerCase();
+
+                if (again.equals("y")) {
+                    validAnswer = true;
+                } else if (again.equals("n")) {
+                    validAnswer = true;
+                    continuePlaying = false;
+                } else {
+                    outputService.printMessage("Invalid command. Please enter 'y' or 'n'.");
+                }
+            }
+        }
+
+        outputService.printMessage("Final balance: " + player.getWallet().getBalance());
+        outputService.printMessage("Thanks for playing!");
     }
 
     private void playerTurn(Player player, Deck deck) {
@@ -65,6 +114,7 @@ public class GameService {
             }
         }
     }
+
     private void dealerTurn(Dealer dealer, Deck deck) {
         outputService.printMessage("Dealer's turn...");
         while (scoringStrategy.calculateScore(dealer.getHand()) < 17) {
@@ -74,7 +124,7 @@ public class GameService {
         if (dealer.isBust()) outputService.printMessage("Dealer busted!");
     }
 
-    private void evaluateWinner(Player player, Dealer dealer) {
+    private void evaluateWinner(Player player, Dealer dealer, int bet) {
         int playerScore = scoringStrategy.calculateScore(player.getHand());
         int dealerScore = scoringStrategy.calculateScore(dealer.getHand());
 
@@ -86,8 +136,12 @@ public class GameService {
             outputService.printMessage("Dealer wins.");
         } else if (playerScore == dealerScore) {
             outputService.printMessage("Draw");
+            player.getWallet().deposit(bet);
         } else {
             outputService.printMessage("You win!");
+            player.getWallet().deposit(bet * 2);
         }
+
+        outputService.printMessage("Your balance: " + player.getWallet().getBalance());
     }
 }
