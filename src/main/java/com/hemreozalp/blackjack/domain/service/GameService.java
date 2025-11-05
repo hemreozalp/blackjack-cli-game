@@ -65,6 +65,14 @@ public class GameService {
             }
         }
     }
+    private void dealerTurn(Dealer dealer, Deck deck) {
+        outputService.printMessage("Dealer's turn...");
+        while (scoringStrategy.calculateScore(dealer.getHand()) < 17) {
+            dealer.addCard(deck.drawCard());
+            outputService.printMessage(dealer.toString());
+        }
+        if (dealer.isBust()) outputService.printMessage("Dealer busted!");
+    }
 
     private void evaluateWinner(Player player, Dealer dealer) {
         int playerScore = scoringStrategy.calculateScore(player.getHand());
