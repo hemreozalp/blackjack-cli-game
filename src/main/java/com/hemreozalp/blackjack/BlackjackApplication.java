@@ -1,10 +1,12 @@
 package com.hemreozalp.blackjack;
 
+import com.hemreozalp.blackjack.domain.service.GameService;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BlackjackApplication {
+public class BlackjackApplication implements CommandLineRunner {
     private final GameService gameService;
 
     public BlackjackApplication(GameService gameService) {
